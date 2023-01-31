@@ -22,3 +22,5 @@ python pdf2txt.py
 ```
 
 Note: You need to edit the directories inside the pdf2txt.py file so that it knows where to fetch the PDF files and where to save the converted files.
+
+PS: This code is just a rewrite of one I saw in a Youtube [video](https://www.youtube.com/watch?v=E_sMa3N44u4). I just added some features and made it better - in my opinion.
