@@ -1,32 +1,41 @@
 import os
 import pdfplumber
+import fpdf
 
 def save_file(filepath, content):
-    with open (filepath, 'w', encoding='utf-8') as outfile:
+    with open (filepath, 'w', encoding='utf-8', errors='ignore') as outfile:
         outfile.write(content)
 
 def convert_pdf2txt(src_dir, dest_dir):
-    if not os.path.isdir(src_dir) or not os.path.isdir(dest_dir):
-        raise Exception("Directory not found")
-    
-    files = [f for f in os.listdir(src_dir) if f.endswith('.pdf')]
+    files = os.listdir(src_dir)
+    files = [i for i in files if '.pdf' in i]
     for file in files:
-        src_file = os.path.join(src_dir, file)
-        dest_file = os.path.join(dest_dir, os.path.splitext(file)[0] + '.txt')
-        if os.path.isfile(dest_file):
-            raise Exception(f"File {dest_file} already exists")
-        
         try:
-            with pdfplumber.open(src_file) as pdf:
+            with pdfplumber.open(src_dir+file) as pdf:
                 output = ''
                 for page in pdf.pages:
                     output += page.extract_text()
-                    output += '\n'
-                save_file(dest_file, output.strip())
+                    output += '\nNEWPAGE\n\n' # change this for your page demarcation
+                save_file(dest_dir+file.replace('.pdf', '.txt'), output.strip())
         except Exception as oops:
-            print(f"An error occured while processing {src_file}: {oops}")
+            print(oops, file)
+
+def convert_txt2pdf(src_dir, dest_dir):
+    files = os.listdir(src_dir)
+    files = [i for i in files if '.txt' in i]
+    for file in files:
+        try:
+            with open(src_dir + file, 'r', encoding='utf-8', errors='ignore') as infile:
+                text = infile.read()
+                pdf = fpdf.FPDF()
+                pdf.add_page()
+                pdf.set_font("Arial", size=12)
+                pdf.multi_cell(190, 10, txt=text, align='L')
+                pdf.output(dest_dir + file.replace('.txt', '.pdf'))
+        except Exception as oops:
+            print(oops, file)
 
 if __name__ == '__main__':
-    src_dir = os.path.expanduser('~/Documents/PDFConv/PDFs/')
-    dest_dir = os.path.expanduser('~/Documents/PDFConv/Converted/')
-    convert_pdf2txt(src_dir, dest_dir)
+    convert_pdf2txt('/path/to/src/pdf/', '/path/to/dest/txt/')
+    convert_txt2pdf('/path/to/src/txt/', '/path/to/dest/pdf/')
+
