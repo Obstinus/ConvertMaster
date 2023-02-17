@@ -2,40 +2,59 @@ import os
 import pdfplumber
 import fpdf
 
-def save_file(filepath, content):
-    with open (filepath, 'w', encoding='utf-8', errors='ignore') as outfile:
-        outfile.write(content)
 
-def convert_pdf2txt(src_dir, dest_dir):
-    files = os.listdir(src_dir)
-    files = [i for i in files if '.pdf' in i]
-    for file in files:
-        try:
-            with pdfplumber.open(src_dir+file) as pdf:
-                output = ''
-                for page in pdf.pages:
-                    output += page.extract_text()
-                    output += '\nNEWPAGE\n\n' # change this for your page demarcation
-                save_file(dest_dir+file.replace('.pdf', '.txt'), output.strip())
-        except Exception as oops:
-            print(oops, file)
+class Conversor:
+    def __init__(self, origem, destino):
+        self.origem = origem
+        self.destino = destino
 
-def convert_txt2pdf(src_dir, dest_dir):
-    files = os.listdir(src_dir)
-    files = [i for i in files if '.txt' in i]
-    for file in files:
-        try:
-            with open(src_dir + file, 'r', encoding='utf-8', errors='ignore') as infile:
+    def converter_pdf_para_txt(self):
+        pdf_files = self._obter_arquivos(self.origem, '.pdf')
+        for pdf_file in pdf_files:
+            with pdfplumber.open(os.path.join(self.origem, pdf_file)) as pdf:
+                text = '\nNEWPAGE\n\n'.join(page.extract_text() for page in pdf.pages)
+            txt_file = pdf_file.replace('.pdf', '.txt')
+            self._salvar_arquivo(os.path.join(self.destino, txt_file), text.strip())
+
+    def converter_txt_para_pdf(self):
+        txt_files = self._obter_arquivos(self.origem, '.txt')
+        for txt_file in txt_files:
+            with open(os.path.join(self.origem, txt_file), 'r', encoding='utf-8', errors='ignore') as infile:
                 text = infile.read()
-                pdf = fpdf.FPDF()
-                pdf.add_page()
-                pdf.set_font("Arial", size=12)
-                pdf.multi_cell(190, 10, txt=text, align='L')
-                pdf.output(dest_dir + file.replace('.txt', '.pdf'))
-        except Exception as oops:
-            print(oops, file)
+            pdf_file = txt_file.replace('.txt', '.pdf')
+            pdf = fpdf.FPDF()
+            pdf.add_page()
+            pdf.set_font("Arial", size=12)
+            pdf.multi_cell(190, 10, txt=text, align='L')
+            pdf.output(os.path.join(self.destino, pdf_file))
+
+    def _obter_arquivos(self, diretorio, extensao):
+        return [f for f in os.listdir(diretorio) if f.endswith(extensao)]
+
+    def _salvar_arquivo(self, filepath, content):
+        with open(filepath, 'w', encoding='utf-8', errors='ignore') as outfile:
+            outfile.write(content)
+
 
 if __name__ == '__main__':
-    convert_pdf2txt('/path/to/src/pdf/', '/path/to/dest/txt/')
-    convert_txt2pdf('/path/to/src/txt/', '/path/to/dest/pdf/')
+    escolha = input("Quer converter PDF para TXT ou TXT para PDF? (digite 'PDF' ou 'TXT') ")
+    origem = input("Qual é o diretório de origem? ")
+    destino = input("Qual é o diretório de destino? ")
 
+    if not os.path.isdir(origem):
+        print(f"O diretório de origem '{origem}' não existe.")
+        exit()
+    if not os.path.isdir(destino):
+        print(f"O diretório de destino '{destino}' não existe.")
+        exit()
+
+    conversor = None
+    if escolha.upper() == 'PDF':
+        conversor = Conversor(origem, destino)
+        conversor.converter_pdf_para_txt()
+    elif escolha.upper() == 'TXT':
+        conversor = Conversor(origem, destino)
+        conversor.converter_txt_para_pdf()
+    else:
+        print("Escolha inválida. Por favor, digite 'PDF' ou 'TXT'.")
+        exit()
